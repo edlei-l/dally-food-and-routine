@@ -28,11 +28,11 @@ function openTask(){const f=$('#task-form');f.reset();$('#task-date').value=toda
 function openMeal(id){selectedMeal=allMeals().find(m=>m.id===id)||null;$('#meal-form').reset();photoJob++;photoBusy=false;pendingPhoto=selectedMeal?.photoId?photoSrc(selectedMeal.photoId):null;$('#meal-form button[type="submit"]').disabled=false;$('#meal-form button[type="submit"]').textContent='保存饮食记录';$('#meal-title').value=selectedMeal?.name||'';$('#meal-date').value=today();const hour=Number(new Intl.DateTimeFormat('en-GB',{hour:'2-digit',hour12:false,timeZone:'Asia/Taipei'}).format(new Date()));$('#meal-type').value=hour<10?'早餐':hour<16?'午餐':'晚餐';$('#meal-minutes').value=selectedMeal?.mins||20;$('#meal-vegetarian').checked=selectedMeal?.diet.includes('veg')||false;$('#meal-library').checked=!selectedMeal;$$('[name="groups"]').forEach(c=>c.checked=selectedMeal?.groups.includes(c.value)||false);showPhotoPreview();$('#meal-dialog').showModal();$('#meal-title').focus()}
 $$('[data-view]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.view)));window.addEventListener('hashchange',()=>navigate(location.hash.slice(1)));['top-add','inline-add','all-add'].forEach(id=>$('#'+id).onclick=openTask);$$('.custom-meal').forEach(b=>b.onclick=()=>openMeal());$$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).close());
 $('#task-form').onsubmit=e=>{e.preventDefault();const title=$('#task-title').value.trim();if(!title)return;data.tasks.push({id:crypto.randomUUID(),title,date:$('#task-date').value,priority:$('#task-priority').value,done:false});save();$('#task-dialog').close();window.daywellSounds?.play('save');toast('小事记好啦，慢慢完成就好')};
-$('#meal-form').onsubmit=async e=>{e.preventDefault();if(photoBusy){toast('照片正在处理，请稍候');return}const title=$('#meal-title').value.trim();if(!title)return;const button=$('#meal-form button[type="submit"]');button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='正在保存…';const prior=JSON.stringify(data);let newPhotoId=null;try{const match=selectedMeal&&title===selectedMeal.name?selectedMeal:null;let photoId=null;if(pendingPhoto){if(match?.photoId&&pendingPhoto===photoSrc(match.photoId))photoId=match.photoId;else{photoId=crypto.randomUUID();await putPhoto(photoId,pendingPhoto);photoCache.set(photoId,pendingPhoto);newPhotoId=photoId;}}const groups=$$('[name="groups"]:checked').map(c=>c.value);let recipeId=match?.id||null;if($('#meal-library').checked){const recipe={id:match?.personal?match.id:'personal-'+crypto.randomUUID(),name:title,desc:$('#meal-note').value.trim()||'来自我的饮食记录',tag:'我的食品库 · 吃过的美味',mins:Number($('#meal-minutes').value)||20,diet:[],groups,personal:true,photoId};if($('#meal-vegetarian').checked)recipe.diet.push('veg');if(recipe.mins<=20)recipe.diet.push('quick');const at=data.recipes.findIndex(r=>r.id===recipe.id);if(at>=0)data.recipes[at]=recipe;else data.recipes.unshift(recipe);recipeId=recipe.id;}data.meals.push({id:crypto.randomUUID(),title,date:$('#meal-date').value,type:$('#meal-type').value,groups,note:$('#meal-note').value.trim(),recipeId,kcal:match?.kcal||null,photoId,created:Date.now()});localStorage.setItem(key,JSON.stringify(data));$('#save-status').textContent='● 已保存在此浏览器';render();$('#meal-dialog').close();toast('这一餐和照片，已经好好记下了');buddyReact('celebrate','好好吃饭的一天！这道美味我记住啦。','meal');}catch(err){data=JSON.parse(prior);if(newPhotoId){photoCache.delete(newPhotoId);deletePhoto(newPhotoId).catch(()=>{});}toast('保存失败，可能是浏览器存储空间不足。请导出备份后重试。');}finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='保存饮食记录'}};
+$('#meal-form').onsubmit=async e=>{e.preventDefault();if(photoBusy){toast('照片正在处理，请稍候');return}const title=$('#meal-title').value.trim();if(!title)return;const button=$('#meal-form button[type="submit"]');button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='正在保存…';const prior=JSON.stringify(data);let newPhotoId=null;try{const match=selectedMeal&&title===selectedMeal.name?selectedMeal:null;let photoId=null;if(pendingPhoto){if(match?.photoId&&pendingPhoto===photoSrc(match.photoId))photoId=match.photoId;else{photoId=crypto.randomUUID();await putPhoto(photoId,pendingPhoto);photoCache.set(photoId,pendingPhoto);newPhotoId=photoId;}}const groups=$$('[name="groups"]:checked').map(c=>c.value);let recipeId=match?.id||null;if($('#meal-library').checked){const recipe={id:match?.personal?match.id:'personal-'+crypto.randomUUID(),name:title,desc:$('#meal-note').value.trim()||'来自我的饮食记录',tag:'我的食品库 · 吃过的美味',mins:Number($('#meal-minutes').value)||20,diet:[],groups,personal:true,photoId};if($('#meal-vegetarian').checked)recipe.diet.push('veg');if(recipe.mins<=20)recipe.diet.push('quick');const at=data.recipes.findIndex(r=>r.id===recipe.id);if(at>=0)data.recipes[at]=recipe;else data.recipes.unshift(recipe);recipeId=recipe.id;}data.meals.push({id:crypto.randomUUID(),title,date:$('#meal-date').value,type:$('#meal-type').value,groups,note:$('#meal-note').value.trim(),recipeId,kcal:match?.kcal||null,photoId,created:Date.now()});localStorage.setItem(key,JSON.stringify(data));$('#save-status').textContent='● 已保存在此浏览器';render();$('#meal-dialog').close();toast('这一餐和照片，已经好好记下了');buddyReact('meal','好好吃饭的一天！这道美味我记住啦。');}catch(err){data=JSON.parse(prior);if(newPhotoId){photoCache.delete(newPhotoId);deletePhoto(newPhotoId).catch(()=>{});}toast('保存失败，可能是浏览器存储空间不足。请导出备份后重试。');}finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='保存饮食记录'}};
 document.addEventListener('change',e=>{if(e.target.matches('[data-task]')){const t=data.tasks.find(t=>t.id===e.target.dataset.task);if(t){t.done=e.target.checked;save();if(t.done){toast('又完成一件事！给你比个耶 ✌');buddyReact('celebrate','耶！又完成一件小事，给你比心！')}}}});
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.log)openMeal(b.dataset.log);if(b.dataset.viewPhoto){const m=data.meals.find(m=>m.id===b.dataset.viewPhoto);if(m&&photoSrc(m.photoId)){$('#full-photo').src=photoSrc(m.photoId);$('#photo-title').textContent=m.title;$('#photo-dialog').showModal()}}if(b.dataset.removeRecipe){const removed=data.recipes.find(m=>m.id===b.dataset.removeRecipe);data.recipes=data.recipes.filter(m=>m.id!==b.dataset.removeRecipe);if(picked?.id===b.dataset.removeRecipe)picked=null;save();discardUnusedPhoto(removed?.photoId);toast('已移出推荐库，饮食记录仍保留')}if(b.dataset.deleteTask){data.tasks=data.tasks.filter(t=>t.id!==b.dataset.deleteTask);save();toast('待办已删除')}if(b.dataset.deleteMeal){const removed=data.meals.find(m=>m.id===b.dataset.deleteMeal);data.meals=data.meals.filter(m=>m.id!==b.dataset.deleteMeal);save();discardUnusedPhoto(removed?.photoId);toast('饮食记录已删除')}});
-$('#task-filter').onchange=render;$('#history-date').onchange=render;$('#clear-date').onclick=()=>{$('#history-date').value='';render()};$('#diet').onchange=()=>{picked=null;renderFood()};$('#water-add').onclick=()=>{data.water[today()]=(data.water[today()]||0)+1;save();toast('记下一杯水，照顾好自己');buddyReact('wave','喝口水，也给自己放松一下。','water')};
-function shuffled(arr){return arr.map(x=>({x,r:Math.random()})).sort((a,b)=>a.r-b.r).map(o=>o.x)}$('#shuffle-home').onclick=()=>{let next=shuffled(allMeals()).slice(0,3).map(m=>m.id);if(next.join()===homeIds.join())next.reverse();homeIds=next;render()};$('#pick-meal').onclick=()=>{const diet=$('#diet').value;let pool=allMeals().filter(m=>diet==='all'||m.diet.includes(diet));const cutoff=new Date(Date.now()-2*86400000).toLocaleDateString('en-CA',{timeZone:'Asia/Taipei'});const eaten=new Set(data.meals.filter(m=>m.date>=cutoff&&m.date<=today()).map(m=>m.recipeId));let fresh=pool.filter(m=>!eaten.has(m.id)&&m.id!==picked?.id);if(!fresh.length)fresh=pool.filter(m=>m.id!==picked?.id);picked=shuffled(fresh.length?fresh:pool)[0];renderFood();toast('今天试试「'+picked.name+'」吧');buddyReact('wave','今天我帮你挑了：'+picked.name+'！','pick')};
+$('#task-filter').onchange=render;$('#history-date').onchange=render;$('#clear-date').onclick=()=>{$('#history-date').value='';render()};$('#diet').onchange=()=>{picked=null;renderFood()};$('#water-add').onclick=()=>{data.water[today()]=(data.water[today()]||0)+1;save();toast('记下一杯水，照顾好自己');buddyReact('water','喝口水，也给自己放松一下。')};
+function shuffled(arr){return arr.map(x=>({x,r:Math.random()})).sort((a,b)=>a.r-b.r).map(o=>o.x)}$('#shuffle-home').onclick=()=>{let next=shuffled(allMeals()).slice(0,3).map(m=>m.id);if(next.join()===homeIds.join())next.reverse();homeIds=next;render()};$('#pick-meal').onclick=()=>{const diet=$('#diet').value;let pool=allMeals().filter(m=>diet==='all'||m.diet.includes(diet));const cutoff=new Date(Date.now()-2*86400000).toLocaleDateString('en-CA',{timeZone:'Asia/Taipei'});const eaten=new Set(data.meals.filter(m=>m.date>=cutoff&&m.date<=today()).map(m=>m.recipeId));let fresh=pool.filter(m=>!eaten.has(m.id)&&m.id!==picked?.id);if(!fresh.length)fresh=pool.filter(m=>m.id!==picked?.id);picked=shuffled(fresh.length?fresh:pool)[0];renderFood();toast('今天试试「'+picked.name+'」吧');buddyReact('pick','今天我帮你挑了：'+picked.name+'！')};
 $('#export').onclick=async()=>{await photosReady;const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),...data,photos:Object.fromEntries(photoCache)},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='好好日常-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('记录已导出，请妥善保管')};
 function openPhotoDb(){if(!photoDb)photoDb=new Promise((resolve,reject)=>{if(!window.indexedDB){reject(new Error('no indexedDB'));return}const req=indexedDB.open('daywell-photos',1);req.onupgradeneeded=()=>{req.result.createObjectStore('photos')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});return photoDb}
 async function loadPhotos(){const db=await openPhotoDb();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly'),store=tx.objectStore('photos'),req=store.openCursor();req.onsuccess=()=>{const cur=req.result;if(cur){photoCache.set(cur.key,cur.value);cur.continue()}};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
@@ -43,6 +43,92 @@ function showPhotoPreview(){$('#photo-preview').hidden=!pendingPhoto;if(pendingP
 function compressPhoto(file){return new Promise((resolve,reject)=>{const image=new Image(),url=URL.createObjectURL(file);image.onload=()=>{try{const ratio=Math.min(1,900/Math.max(image.naturalWidth,image.naturalHeight));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.naturalWidth*ratio));canvas.height=Math.max(1,Math.round(image.naturalHeight*ratio));const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',.8));}catch(e){reject(e)}finally{URL.revokeObjectURL(url)}};image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('invalid image'))};image.src=url})}
 $('#meal-photo').onchange=async e=>{const file=e.target.files[0];if(!file)return;const job=++photoJob;if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)||file.size>10*1024*1024){toast('请选择不超过 10 MB 的 JPG、PNG、WebP 或 GIF 照片');e.target.value='';return}photoBusy=true;const button=$('#meal-form button[type="submit"]');button.disabled=true;button.textContent='正在处理照片…';try{const src=await compressPhoto(file);if(job!==photoJob)return;pendingPhoto=src;showPhotoPreview();$('#meal-library').checked=true;}catch{if(job===photoJob)toast('照片读取失败，请换一张图片')}finally{if(job===photoJob){photoBusy=false;button.disabled=false;button.textContent='保存饮食记录'}}};
 $('#remove-photo').onclick=()=>{photoJob++;photoBusy=false;pendingPhoto=null;$('#meal-photo').value='';showPhotoPreview();const b=$('#meal-form button[type="submit"]');b.disabled=false;b.textContent='保存饮食记录'};
-let buddyReset,buddyPointerFrame,buddyPaused=false;function buddyReact(state,message,sound){clearTimeout(buddyReset);$$('.mascot-sprite').forEach(s=>{s.classList.remove('blink','wave','celebrate');if(state)s.classList.add(state)});if(message){$('#buddy-bubble').textContent=message;window.daywellSounds?.play(sound||(state==='celebrate'?'success':'buddy'))}buddyReset=setTimeout(()=>$$('.mascot-sprite').forEach(s=>s.classList.remove('blink','wave','celebrate')),state==='blink'?170:2600)}
-function initBuddy(){const motion=$('#buddy-motion');motion.onclick=()=>{buddyPaused=!buddyPaused;document.body.classList.toggle('mascot-paused',buddyPaused);motion.textContent=buddyPaused?'开启动作':'暂停动作';motion.setAttribute('aria-pressed',String(buddyPaused))};document.addEventListener('focusin',e=>{if($('#buddy').hidden||$('#buddy').contains(e.target))return;const a=e.target.getBoundingClientRect(),b=$('#buddy').getBoundingClientRect();if(a.right>b.left&&a.left<b.right&&a.bottom>b.top&&a.top<b.bottom){$('#buddy').hidden=true;$('#buddy-show').hidden=false}});const messages=['今天不必做到完美，做一点就很好。','抬头看看远处，让眼睛休息一下吧。','别忘了好好吃饭，我帮你记着呢！','你已经在认真生活啦，给你比个耶 ✌'];let chatIndex=0;$$('.mascot-touch').forEach(b=>{b.onclick=()=>buddyReact('wave',messages[chatIndex++%messages.length]);b.addEventListener('pointermove',e=>{if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;cancelAnimationFrame(buddyPointerFrame);buddyPointerFrame=requestAnimationFrame(()=>{const rect=b.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width-.5;const sprite=b.querySelector('.mascot-sprite');if(!sprite.classList.contains('wave')&&!sprite.classList.contains('celebrate'))sprite.style.transform=`rotate(${x*9}deg)`})});b.addEventListener('pointerleave',()=>{b.querySelector('.mascot-sprite').style.transform=''})});$('#buddy-chat').onclick=()=>buddyReact('wave',messages[chatIndex++%messages.length]);$('#buddy-food').onclick=()=>{navigate('food');$('#pick-meal').click()};$('#buddy-hide').onclick=()=>{$('#buddy').hidden=true;$('#buddy-show').hidden=false};$('#buddy-show').onclick=()=>{$('#buddy').hidden=false;$('#buddy-show').hidden=true;buddyReact('wave','我回来啦，一起把日子过好！')};setInterval(()=>{if(!buddyPaused&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches&&!document.hidden&&!$$('.mascot-sprite').some(s=>s.classList.contains('wave')||s.classList.contains('celebrate')))buddyReact('blink')},4500)}
+const buddyCues = {
+  wave: 'buddy',
+  stretch: 'stretch',
+  encourage: 'encourage',
+  celebrate: 'success',
+  water: 'water',
+  pick: 'pick',
+  meal: 'meal'
+};
+
+let buddyReset, buddyPointerFrame, buddyPaused = false, buddyState = '';
+const reducedBuddyMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const buddySprites = $$('.mascot-sprite');
+
+function buddyReact(state, message) {
+  clearTimeout(buddyReset);
+  cancelAnimationFrame(buddyPointerFrame);
+  buddyState = state;
+  for (const sprite of buddySprites) {
+    sprite.style.transform = '';
+    sprite.dataset.reaction = state;
+  }
+  if (message) $('#buddy-bubble').textContent = message;
+  if (buddyCues[state]) window.daywellSounds?.play(buddyCues[state]);
+  buddyReset = setTimeout(() => {
+    buddyState = '';
+    for (const sprite of buddySprites) delete sprite.dataset.reaction;
+  }, state === 'blink' ? 170 : 1800);
+}
+
+function initBuddy() {
+  const buddy = $('#buddy');
+  const show = $('#buddy-show');
+  const motion = $('#buddy-motion');
+  const hide = () => { buddy.hidden = true; show.hidden = false; };
+  motion.onclick = () => {
+    buddyPaused = !buddyPaused;
+    document.body.classList.toggle('mascot-paused', buddyPaused);
+    if (buddyPaused) {
+      cancelAnimationFrame(buddyPointerFrame);
+      for (const sprite of buddySprites) sprite.style.transform = '';
+    }
+    motion.textContent = buddyPaused ? '开启动作' : '暂停动作';
+    motion.setAttribute('aria-pressed', String(buddyPaused));
+  };
+  document.addEventListener('focusin', e => {
+    if (buddy.hidden || buddy.contains(e.target)) return;
+    const a = e.target.getBoundingClientRect();
+    const b = buddy.getBoundingClientRect();
+    if (a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom) hide();
+  });
+
+  const chats = [
+    ['wave', '嗨，今天也一起把日子过好！'],
+    ['stretch', '伸个懒腰，抬头让眼睛休息一下吧。'],
+    ['encourage', '今天不必做到完美，做一点就很好。']
+  ];
+  let chatIndex = 0;
+  const chat = () => buddyReact(...chats[chatIndex++ % chats.length]);
+  for (const button of $$('.mascot-touch')) {
+    const sprite = button.querySelector('.mascot-sprite');
+    button.onclick = chat;
+    button.addEventListener('pointermove', e => {
+      if (buddyPaused || reducedBuddyMotion.matches || buddyState) return;
+      cancelAnimationFrame(buddyPointerFrame);
+      buddyPointerFrame = requestAnimationFrame(() => {
+        const rect = button.getBoundingClientRect();
+        const offset = (e.clientX - rect.left) / rect.width - .5;
+        sprite.style.transform = `rotate(${offset * 9}deg)`;
+      });
+    });
+    button.addEventListener('pointerleave', () => {
+      cancelAnimationFrame(buddyPointerFrame);
+      sprite.style.transform = '';
+    });
+  }
+  $('#buddy-chat').onclick = chat;
+  $('#buddy-food').onclick = () => { navigate('food'); $('#pick-meal').click(); };
+  $('#buddy-hide').onclick = hide;
+  show.onclick = () => {
+    buddy.hidden = false;
+    show.hidden = true;
+    buddyReact('wave', '我回来啦，一起把日子过好！');
+  };
+  setInterval(() => {
+    if (!buddyState && !buddyPaused && !reducedBuddyMotion.matches && !document.hidden) buddyReact('blink');
+  }, 4500);
+}
 $('#date-label').textContent=new Intl.DateTimeFormat('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long',timeZone:'Asia/Taipei'}).format(new Date())+' / 新的一天，新的小美好';render();navigate(location.hash.slice(1)||'today');const photosReady=loadPhotos().then(render).catch(()=>toast('照片存储暂不可用；文字记录仍可使用'));initBuddy();
